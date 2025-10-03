@@ -1,0 +1,467 @@
+accrec_accpay: |
+  -- Direct invoice-based query without journal tables
+  WITH filtered_invoices AS (
+    -- Filter invoices by tenant and type
+    SELECT 
+      i.id,
+      i.invoice_id as source_id,
+      i.tenant_id,
+      i.invoice_number,
+      i.contact_name,
+      i.date AS invoice_date,
+      i.due_date,
+      i.status,
+      i.reference,
+      i.type as source_type,
+      i.sub_total,
+      i.total_tax,
+      i.total,
+      i.updated_date_utc
+    FROM invoices i
+    WHERE i.tenant_id = :tenant_id
+      AND i.date BETWEEN :start_date AND :end_date
+  ),
+  account_details AS (
+    -- Get one account name per account code
+    SELECT DISTINCT ON (code, tenant_id)
+      code,
+      tenant_id,
+      name as account_name,
+      type as account_type
+    FROM charted_accounts
+    ORDER BY code, tenant_id, name
+  ),
+  invoice_line_details AS (
+    -- Extract line item details with row numbers
+    SELECT 
+      ili.id,
+      ili.invoice_unique_id,
+      ili.invoice_id,
+      ili.line_item_id,
+      ili.description,
+      ili.quantity,
+      ili.unit_amount,
+      ili.account_code,
+      ad.account_name,
+      ad.account_type,
+      ili.item_code,
+      ili.tax_type,
+      ili.tax_amount,
+      ili.line_amount,
+      i.tenant_id,
+      source_id,
+      i.contact_name,
+      i.invoice_date,
+      i.reference,
+      source_type,
+      i.invoice_number,
+      i.sub_total
+    FROM invoices_line_items ili
+    JOIN filtered_invoices i ON ili.invoice_unique_id = i.id
+    LEFT JOIN account_details ad ON ili.account_code = ad.code AND i.tenant_id = ad.tenant_id
+  ),
+  first_line_item AS (
+    -- Select the first line item for each invoice
+    SELECT *
+    FROM (
+      SELECT 
+        *,
+        ROW_NUMBER() OVER (PARTITION BY invoice_id ORDER BY id) as rn
+      FROM invoice_line_details
+    ) t
+    WHERE rn = 1
+  ),
+  paginated_data AS (
+    -- Add pagination with row numbers
+    SELECT 
+      *,
+      ROW_NUMBER() OVER (ORDER BY id) as row_num
+    FROM first_line_item
+    LIMIT :limit OFFSET :offset
+  )
+  SELECT 
+    id,
+    source_id,
+    invoice_unique_id,
+    line_item_id,
+    description,
+    quantity,
+    unit_amount,
+    account_code,
+    account_name,
+    account_type,
+    item_code,
+    tax_type,
+    source_type,
+    tax_amount,
+    line_amount,
+    tenant_id,
+    contact_name,
+    invoice_date as journal_date,
+    invoice_number,
+    reference,
+    sub_total
+  FROM paginated_data
+  ORDER BY row_num;
+
+cashrec_cashpaid: |
+  -- Direct bank transaction-based query without journal tables
+  WITH filtered_bank_transactions AS (
+    -- Filter bank transactions by tenant and type
+    SELECT 
+      bt.id,
+      bt.bank_transaction_id as source_id,
+      bt.tenant_id,
+      bt.date AS transaction_date,
+      bt.status,
+      bt.type,
+      bt.bank_account_code,
+      bt.bank_account_name,
+      bt.contact_name,
+      bt.sub_total,
+      bt.total_tax,
+      bt.total,
+      bt.updated_date_utc,
+      -- Set source_type based on transaction type
+      CASE 
+        WHEN bt.type LIKE '%SPEND%' THEN 'CASHPAID'
+        WHEN bt.type LIKE '%RECEIVE%' THEN 'CASHREC'
+        ELSE bt.type
+      END AS source_type
+    FROM bank_transactions bt
+    WHERE bt.tenant_id = :tenant_id
+      AND bt.date BETWEEN :start_date AND :end_date
+  ),
+  account_details AS (
+    -- Get one account name per account code
+    SELECT DISTINCT ON (code, tenant_id)
+      code,
+      tenant_id,
+      name as account_name,
+      type as account_type
+    FROM charted_accounts
+    ORDER BY code, tenant_id, name
+  ),
+  bank_transaction_line_details AS (
+    -- Extract line item details with row numbers
+    SELECT
+      btli.id,
+      btli.bank_transaction_unique_id,
+      btli.bank_transaction_id,
+      btli.line_item_id,
+      btli.description,
+      btli.unit_amount,
+      btli.account_code,
+      ad.account_name,
+      ad.account_type,
+      btli.tax_type,
+      btli.tax_amount,
+      btli.line_amount,
+      bt.tenant_id,
+      source_id,
+      bt.contact_name,
+      bt.transaction_date,
+      bt.bank_account_code,
+      bt.bank_account_name,
+      bt.sub_total,
+      bt.total_tax,
+      bt.total,
+      bt.source_type
+    FROM bank_transactions_line_items btli
+    JOIN filtered_bank_transactions bt ON btli.bank_transaction_unique_id = bt.id
+    LEFT JOIN account_details ad ON btli.account_code = ad.code AND bt.tenant_id = ad.tenant_id
+  ),
+  first_line_item AS (
+    -- Select the first line item for each bank transaction
+    SELECT *
+    FROM (
+      SELECT
+        *,
+        ROW_NUMBER() OVER (PARTITION BY bank_transaction_id ORDER BY id) as rn
+      FROM bank_transaction_line_details
+    ) t
+    WHERE rn = 1
+  ),
+  paginated_data AS (
+    -- Add pagination with row numbers
+    SELECT 
+      *,
+      ROW_NUMBER() OVER (ORDER BY id) as row_num
+    FROM first_line_item
+    LIMIT :limit OFFSET :offset
+  )
+  SELECT 
+    id,
+    bank_transaction_unique_id,
+    line_item_id,
+    description,
+    unit_amount,
+    account_code,
+    account_name,
+    account_type,
+    tax_type,
+    tax_amount,
+    line_amount,
+    tenant_id,
+    source_id,
+    contact_name,
+    transaction_date as journal_date,
+    bank_account_code,
+    bank_account_name,
+    sub_total,
+    total_tax,
+    source_type,
+    total
+  FROM paginated_data
+  ORDER BY row_num;
+
+accreccredit_accpaycredit: |
+  -- Direct credit note-based query without journal tables
+  WITH filtered_credit_notes AS (
+    -- Filter credit notes by tenant and type
+    SELECT 
+      cn.id,
+      cn.credit_note_id as source_id,
+      cn.tenant_id,
+      cn.credit_note_number,
+      cn.contact_name,
+      cn.date AS credit_note_date,
+      cn.status,
+      cn.type as source_type,
+      cn.reference,
+      cn.sub_total,
+      cn.total_tax,
+      cn.total
+    FROM credit_notes cn
+    WHERE cn.tenant_id = :tenant_id
+      AND cn.date BETWEEN :start_date AND :end_date
+  ),
+  account_details AS (
+    -- Get one account name per account code
+    SELECT DISTINCT ON (code, tenant_id)
+      code,
+      tenant_id,
+      name as account_name,
+      type as account_type
+    FROM charted_accounts
+    ORDER BY code, tenant_id, name
+  ),
+  credit_note_line_details AS (
+    -- Extract line item details
+    SELECT 
+      cnli.id,
+      cnli.credit_note_unique_id,
+      cnli.line_item_id,
+      cnli.description,
+      cnli.quantity,
+      cnli.unit_amount,
+      cnli.account_code,
+      ad.account_name,
+      ad.account_type,
+      cnli.tax_type,
+      cnli.tax_amount,
+      cnli.line_amount,
+      cn.tenant_id,
+      source_id,
+      cn.contact_name,
+      cn.credit_note_date,
+      cn.credit_note_number,
+      cn.reference,
+      cn.sub_total,
+      cn.total_tax,
+      cn.total,
+      cn.source_type
+    FROM credit_note_line_items cnli
+    JOIN filtered_credit_notes cn ON cnli.credit_note_unique_id = cn.id
+    LEFT JOIN account_details ad ON cnli.account_code = ad.code AND cn.tenant_id = ad.tenant_id
+  ),
+  first_line_item AS (
+    -- Select the first line item for each credit note
+    SELECT *
+    FROM (
+      SELECT 
+        *,
+        ROW_NUMBER() OVER (PARTITION BY credit_note_unique_id ORDER BY id) as rn
+      FROM credit_note_line_details
+    ) t
+    WHERE rn = 1
+  ),
+  paginated_data AS (
+    -- Add pagination with row numbers
+    SELECT 
+      *,
+      ROW_NUMBER() OVER (ORDER BY id) as row_num
+    FROM first_line_item
+    LIMIT :limit OFFSET :offset
+  )
+  SELECT 
+    id,
+    credit_note_unique_id,
+    line_item_id,
+    description,
+    quantity,
+    unit_amount,
+    account_code,
+    account_name,
+    account_type,
+    tax_type,
+    tax_amount,
+    line_amount,
+    tenant_id,
+    source_id,
+    contact_name,
+    credit_note_date as journal_date,
+    credit_note_number,
+    reference,
+    sub_total,
+    total_tax,
+    source_type,
+    total
+  FROM paginated_data
+  ORDER BY row_num;
+
+expclaim: |
+  -- Direct expense claim-based query without journal tables
+  WITH filtered_expense_claims AS (
+    -- Filter expense claims by tenant and date
+    SELECT 
+      ec.id,
+      ec.expense_claim_id as source_id,
+      ec.tenant_id,
+      ec.status,
+      ec.updated_date_utc,
+      ec.user_id,
+      ec.total,
+      ec.amount_due,
+      ec.amount_paid
+    FROM expense_claims ec
+    WHERE ec.tenant_id = :tenant_id
+      AND ec.updated_date_utc BETWEEN :start_date AND :end_date
+  ),
+  account_details AS (
+    -- Get one account name per account code
+    SELECT DISTINCT ON (code, tenant_id)
+      code,
+      tenant_id,
+      name as account_name,
+      type as account_type
+    FROM charted_accounts
+    ORDER BY code, tenant_id, name
+  ),
+  expense_receipts AS (
+    -- Get receipt details for each expense claim
+    SELECT 
+      r.id,
+      r.receipt_id,
+      r.expense_claim_unique_id,
+      r.receipt_number,
+      r.date AS receipt_date,
+      r.user_id,
+      r.user_email,
+      r.user_first_name,
+      r.user_last_name,
+      r.user_organisation_role,
+      r.contact_name,
+      r.status,
+      r.reference,
+      r.total,
+      r.sub_total,
+      r.total_tax,
+      ec.tenant_id,
+      source_id,
+      ec.status AS expense_claim_status,
+      ec.total AS expense_claim_total,
+      ec.amount_due,
+      ec.amount_paid
+    FROM expense_claim_receipts r
+    JOIN filtered_expense_claims ec ON r.expense_claim_unique_id = ec.id
+  ),
+  receipt_line_details AS (
+    -- Extract receipt line item details
+    SELECT 
+      rli.id,
+      rli.receipt_unique_id,
+      rli.line_item_id,
+      rli.description,
+      rli.unit_amount,
+      rli.account_code,
+      ad.account_name,
+      ad.account_type,
+      rli.tax_type,
+      rli.tax_amount,
+      rli.line_amount,
+      r.tenant_id,
+      source_id,
+      r.receipt_id,
+      r.receipt_number,
+      r.receipt_date,
+      r.contact_name,
+      r.status AS receipt_status,
+      r.reference AS receipt_reference,
+      r.total AS receipt_total,
+      r.sub_total AS receipt_sub_total,
+      r.total_tax AS receipt_total_tax,
+      r.expense_claim_status,
+      r.expense_claim_total,
+      r.amount_due,
+      r.amount_paid,
+      r.user_email,
+      r.user_first_name,
+      r.user_last_name,
+      r.user_organisation_role
+    FROM expense_claim_receipt_line_items rli
+    JOIN expense_receipts r ON rli.receipt_unique_id = r.id
+    LEFT JOIN account_details ad ON rli.account_code = ad.code AND r.tenant_id = ad.tenant_id
+  ),
+  first_line_item AS (
+    -- Select the first line item for each receipt
+    SELECT *
+    FROM (
+      SELECT 
+        *,
+        ROW_NUMBER() OVER (PARTITION BY receipt_unique_id ORDER BY id) as rn
+      FROM receipt_line_details
+    ) t
+    WHERE rn = 1
+  ),
+  paginated_data AS (
+    -- Add pagination with row numbers
+    SELECT 
+      *,
+      ROW_NUMBER() OVER (ORDER BY id) as row_num
+    FROM first_line_item
+    LIMIT :limit OFFSET :offset
+  )
+  SELECT 
+    id,
+    source_id,
+    receipt_unique_id,
+    line_item_id,
+    description,
+    unit_amount,
+    account_code,
+    account_name,
+    account_type,
+    tax_type,
+    tax_amount,
+    line_amount,
+    tenant_id,
+    receipt_id,
+    receipt_number,
+    receipt_date,
+    contact_name,
+    receipt_status,
+    receipt_reference,
+    receipt_total,
+    receipt_sub_total,
+    receipt_total_tax,
+    expense_claim_status,
+    expense_claim_total,
+    amount_due,
+    amount_paid,
+    user_email,
+    user_first_name,
+    user_last_name,
+    user_organisation_role
+  FROM paginated_data
+  ORDER BY row_num;

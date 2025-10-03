@@ -1,0 +1,60 @@
+# Use a slim Python image for a lighter container
+FROM python:3.10-slim
+
+## Set environment variables for Python: prevent creation of .pyc files and enable unbuffered output
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Install system-level dependencies if needed
+RUN apt-get update && apt-get install -y build-essential
+
+# Copy requirements files and combine them
+COPY ai/gst_validation/requirements.txt /app/gst_requirements.txt
+COPY ai/account_mapping/requirements.txt /app/account_requirements.txt
+
+# Create directory structure matching the app.py environment
+RUN mkdir -p /app/ai/utils /app/ai/ml
+
+# Copy source code for both processes
+COPY ai/gst_validation/src/ /app/gst_validation/src/
+COPY ai/account_mapping/src/ /app/account_mapping/src/
+
+# Copy utils and ml directories to both locations for compatibility
+COPY ai/utils/ /app/ai/utils/
+COPY ai/ml/ /app/ai/ml/
+# Also keep the old paths for backward compatibility
+COPY ai/utils/ /app/utils/
+COPY ai/ml/ /app/ml/
+
+COPY common/ /app/common/
+
+RUN pip install --upgrade pip && \
+    pip install -r /app/gst_requirements.txt && \
+    pip install -r /app/account_requirements.txt
+
+# Create a shell script to run both model selection processes
+RUN echo '#!/bin/bash\n\
+    echo "Starting GST Validation model selection..."\n\
+    cd /app/gst_validation && python src/knn_model_selection.py\n\
+    if [ $? -ne 0 ]; then\n\
+    echo "GST Validation model selection failed"\n\
+    exit 1\n\
+    fi\n\
+    echo "GST Validation model selection completed successfully"\n\
+    \n\
+    echo "Starting Account Mapping model selection..."\n\
+    cd /app/account_mapping && python src/knn_model_selection.py\n\
+    if [ $? -ne 0 ]; then\n\
+    echo "Account Mapping model selection failed"\n\
+    exit 1\n\
+    fi\n\
+    echo "Account Mapping model selection completed successfully"\n\
+    touch /tmp/done' > /app/run_model_selection.sh && \
+    chmod +x /app/run_model_selection.sh
+
+# Set the entrypoint to run both processes
+CMD ["/app/run_model_selection.sh"]

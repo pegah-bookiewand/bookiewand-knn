@@ -1,0 +1,16 @@
+python-dotenv==1.0.1
+uvicorn==0.34.0
+fastapi==0.115.6
+numpy~=1.26.4
+pandas~=2.2.3
+scikit-learn==1.6.0
+supabase==2.13.0
+neo4j~=5.27.0
+openai==1.76.0
+openai-agents==0.0.14
+boto3==1.37.3
+pyyaml==6.0.2
+sqlalchemy==2.0.39
+psycopg2-binary==2.9.10
+requests==2.32.3
+tiktoken==0.8.0

@@ -1,0 +1,174 @@
+random_seed: 42
+
+tables:
+  - table_name: accrec_accpay
+    categorical_columns:
+      - id
+      - source_id
+      - invoice_unique_id
+      - line_item_id
+      - description
+      - account_code
+      - account_name
+      - account_type
+      - tax_type
+      - source_type
+      - tenant_id
+      - contact_name
+      - journal_date
+      - invoice_number
+      - reference
+      - item_code
+    numerical_columns:
+      - quantity
+      - unit_amount
+      - tax_amount
+      - line_amount
+      - sub_total
+    categorical_features:
+      - description
+      - source_type
+      - contact_name
+      - reference
+      - item_code
+    numerical_features:
+      - line_amount
+      - tax_amount
+      - sub_total
+    target_variable: account_code
+    must_have_features:
+      - description
+      - contact_name
+    date_column: journal_date
+    filter_low_frequency_class_counts: True
+
+  - table_name: cashrec_cashpaid
+    categorical_columns:
+      - id
+      - bank_transaction_unique_id
+      - line_item_id
+      - description
+      - account_code
+      - account_name
+      - account_type
+      - tax_type
+      - tenant_id
+      - source_id
+      - contact_name
+      - journal_date
+      - bank_account_code
+      - bank_account_name
+      - source_type
+    numerical_columns:
+      - unit_amount
+      - tax_amount
+      - line_amount
+      - sub_total
+      - total_tax
+      - total
+    categorical_features:
+      - bank_account_name
+      - contact_name
+      - description
+      - source_type
+    numerical_features:
+      - total_tax
+      - line_amount
+      - sub_total
+    target_variable: account_code
+    must_have_features:
+      - description
+      - contact_name
+    date_column: journal_date
+    filter_low_frequency_class_counts: True
+
+  - table_name: accreccredit_accpaycredit
+    categorical_columns:
+      - id
+      - credit_note_unique_id
+      - line_item_id
+      - description
+      - account_code
+      - account_name
+      - account_type
+      - tax_type
+      - tenant_id
+      - source_id
+      - contact_name
+      - journal_date
+      - credit_note_number
+      - reference
+      - source_type
+    numerical_columns:
+      - quantity
+      - unit_amount
+      - tax_amount
+      - line_amount
+      - sub_total
+      - total_tax
+      - total
+    categorical_features:
+      - description
+      - source_type
+      - contact_name
+      - reference
+    numerical_features:
+      - line_amount
+      - tax_amount
+      - total_tax
+      - sub_total
+    target_variable: account_code
+    must_have_features:
+      - description
+      - contact_name
+    date_column: journal_date
+    filter_low_frequency_class_counts: True
+
+  - table_name: expclaim
+    categorical_columns:
+      - id
+      - source_id
+      - receipt_unique_id
+      - line_item_id
+      - description
+      - account_code
+      - account_name
+      - account_type
+      - tax_type
+      - tenant_id
+      - receipt_id
+      - receipt_number
+      - receipt_date
+      - contact_name
+      - receipt_status
+      - receipt_reference
+      - expense_claim_status
+      - user_email
+      - user_first_name
+      - user_last_name
+      - user_organisation_role
+    numerical_columns:
+      - unit_amount
+      - tax_amount
+      - line_amount
+      - receipt_total
+      - receipt_sub_total
+      - receipt_total_tax
+      - expense_claim_total
+      - amount_due
+      - amount_paid
+    categorical_features:
+      - description
+      - receipt_status
+      - expense_claim_status
+      - contact_name
+    numerical_features:
+      - line_amount
+      - tax_amount
+      - receipt_total_tax
+    target_variable: account_code
+    must_have_features:
+      - description
+      - contact_name
+    date_column: receipt_date
+    filter_low_frequency_class_counts: True
