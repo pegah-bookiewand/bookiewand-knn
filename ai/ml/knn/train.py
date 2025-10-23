@@ -32,6 +32,7 @@ def train_step(
         table_filter_low_frequency_class_counts: Dict[str, bool],
         table_model_selection_version: Dict[str, str],
         random_seed: int = 42,
+        specific_tenant_id: str = None,
 ) -> None:
     absolute_logs_dir = os.path.join(base_data_dir, logs_dir)
     log_file_path = os.path.join(absolute_logs_dir, f"{run_timestamp}.txt")
@@ -46,7 +47,7 @@ def train_step(
     # ========= data collection step =========
     raw_dataset_dir = os.path.join(base_data_dir, raw_data_prefix, run_timestamp)
     os.makedirs(raw_dataset_dir, exist_ok=True)
-    tenant_ids = fetch_tenant_ids()
+    tenant_ids = fetch_tenant_ids(specific_tenant_id=specific_tenant_id)
 
     artifact_dirs = []
     artifact_prefixes = []

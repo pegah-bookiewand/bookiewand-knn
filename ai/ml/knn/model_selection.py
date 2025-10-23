@@ -36,6 +36,7 @@ def model_selection_step(
         table_filter_low_frequency_class_counts: Dict[str, bool],
         table_must_have_features: Dict[str, List[str]],
         random_seed: int = 42,
+        specific_tenant_id: str = None,
 ) -> None:
     """
     Performs a data-driven model selection workflow that includes data collection, preprocessing,
@@ -92,7 +93,7 @@ def model_selection_step(
     # ========= data collection step =========
     raw_dataset_dir = os.path.join(base_data_dir, raw_data_prefix, run_timestamp)
     os.makedirs(raw_dataset_dir, exist_ok=True)
-    tenant_ids = fetch_tenant_ids()
+    tenant_ids = fetch_tenant_ids(specific_tenant_id=specific_tenant_id)
     for tenant_id in tenant_ids:
         data_collection_step(raw_dataset_dir=raw_dataset_dir,
                              tenant_id=tenant_id)

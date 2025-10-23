@@ -24,6 +24,7 @@ async def main():
     GST_VALIDATION_CHECKPOINTS_DIR = os.getenv('GST_VALIDATION_CHECKPOINTS_DIR')
     GST_VALIDATION_LOGS_DIR = os.getenv('GST_VALIDATION_LOGS_DIR')
     GST_VALIDATION_BUCKET_NAME = os.getenv('GST_VALIDATION_BUCKET_NAME')
+    SPECIFIC_TENANT_ID = os.getenv('SPECIFIC_TENANT_ID', '').strip() or None
 
     # Check that environment variables are not None
     if not all([GST_VALIDATION_BASE_DATA_DIR,
@@ -71,6 +72,7 @@ async def main():
         table_filter_low_frequency_class_counts=train_config["table_filter_low_frequency_class_counts"],
         table_model_selection_version=train_config["table_model_selection_version"],
         random_seed=train_config["random_seed"],
+        specific_tenant_id=SPECIFIC_TENANT_ID,
     )
 
     # ============ Evaluation Step ============

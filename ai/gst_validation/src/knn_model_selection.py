@@ -19,6 +19,7 @@ def main():
     GST_VALIDATION_MODEL_SELECTION_DIR = os.getenv('GST_VALIDATION_MODEL_SELECTION_DIR')
     GST_VALIDATION_LOGS_DIR = os.getenv('GST_VALIDATION_LOGS_DIR')
     GST_VALIDATION_BUCKET_NAME = os.getenv('GST_VALIDATION_BUCKET_NAME')
+    SPECIFIC_TENANT_ID = os.getenv('SPECIFIC_TENANT_ID', '').strip() or None
 
     # Check that environment variables are not None
     if not all([GST_VALIDATION_BASE_DATA_DIR,
@@ -87,7 +88,8 @@ def main():
         table_date_columns=table_date_columns,
         table_filter_low_frequency_class_counts=table_filter_low_frequency_class_counts,
         table_must_have_features=table_must_have_features,
-        random_seed=random_seed
+        random_seed=random_seed,
+        specific_tenant_id=SPECIFIC_TENANT_ID
     )
 
 

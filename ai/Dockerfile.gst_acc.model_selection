@@ -19,18 +19,16 @@ COPY ai/account_mapping/requirements.txt /app/account_requirements.txt
 # Create directory structure matching the app.py environment
 RUN mkdir -p /app/ai/utils /app/ai/ml
 
-# Copy source code for both processes
-COPY ai/gst_validation/src/ /app/gst_validation/src/
-COPY ai/account_mapping/src/ /app/account_mapping/src/
-
-# Copy utils and ml directories to both locations for compatibility
-COPY ai/utils/ /app/ai/utils/
-COPY ai/ml/ /app/ai/ml/
-# Also keep the old paths for backward compatibility
-COPY ai/utils/ /app/utils/
-COPY ai/ml/ /app/ml/
-
+# Copy all ai code
+COPY ai/ /app/ai/
 COPY common/ /app/common/
+
+# Create symlinks for backward compatibility
+RUN ln -s /app/ai/gst_validation /app/gst_validation && \
+    ln -s /app/ai/account_mapping /app/account_mapping && \
+    ln -s /app/ai/utils /app/utils && \
+    ln -s /app/ai/ml /app/ml && \
+    ln -s /app/ai/agents /app/agents
 
 RUN pip install --upgrade pip && \
     pip install -r /app/gst_requirements.txt && \

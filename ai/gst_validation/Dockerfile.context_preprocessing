@@ -11,12 +11,9 @@ COPY ai/gst_validation/requirements.txt /app/requirements.txt
 RUN pip install --upgrade pip && pip install -r /app/requirements.txt
 
 # Now copy the rest of the application code.
-COPY ai/gst_validation/src/ /app/ai/src/
-COPY ai/utils/ /app/ai/utils/
-COPY ai/ml/ /app/ai/ml/
-COPY ai/agents/ /app/ai/agents/
+COPY ai/ /app/ai/
 COPY common/ /app/common/
 
 # The entrypoint for the training container:
 ENV PYTHONPATH=/app
-CMD ["sh", "-c", "python ai/src/llm_context_processing.py && touch /tmp/done || (echo 'Service failed' && exit 1)"]
+CMD ["sh", "-c", "python ai/gst_validation/src/llm_context_processing.py && touch /tmp/done || (echo 'Service failed' && exit 1)"]

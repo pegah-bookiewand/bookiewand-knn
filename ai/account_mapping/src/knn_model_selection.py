@@ -20,6 +20,7 @@ def main():
     ACCOUNT_MAPPING_MODEL_SELECTION_DIR = os.getenv('ACCOUNT_MAPPING_MODEL_SELECTION_DIR')
     ACCOUNT_MAPPING_LOGS_DIR = os.getenv('ACCOUNT_MAPPING_LOGS_DIR')
     ACCOUNT_MAPPING_BUCKET_NAME = os.getenv('ACCOUNT_MAPPING_BUCKET_NAME')
+    SPECIFIC_TENANT_ID = os.getenv('SPECIFIC_TENANT_ID', '').strip() or None
 
     # Check that environment variables are not None
     if not all([ACCOUNT_MAPPING_BASE_DATA_DIR,
@@ -91,7 +92,8 @@ def main():
         table_date_columns=table_date_columns,
         table_filter_low_frequency_class_counts=table_filter_low_frequency_class_counts,
         table_must_have_features=table_must_have_features,
-        random_seed=random_seed
+        random_seed=random_seed,
+        specific_tenant_id=SPECIFIC_TENANT_ID
     )
 
     set_service_desired_count_to_zero()

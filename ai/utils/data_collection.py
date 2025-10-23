@@ -23,29 +23,42 @@ load_dotenv(override=True)
 logger = get_logger()
 
 
-def fetch_tenant_ids() -> list[str]:
+def fetch_tenant_ids(specific_tenant_id: Optional[str] = None) -> list[str]:
     """
-    Fetch all unique tenant IDs from the database.
+    Fetch all unique tenant IDs from the database, or a specific tenant if specified.
 
     Parameters
     ----------
-    logger : Any
-        A logger instance for logging errors and execution info.
+    specific_tenant_id : Optional[str]
+        Optional specific tenant ID to fetch. If provided and exists, only this tenant
+        will be returned. If not provided or doesn't exist, all tenants will be returned.
 
     Returns
     -------
     List[str]
-        A list of unique tenant IDs.
+        A list of unique tenant IDs (either all or just the specific one if valid).
     """
-    logger.info("Fetching all unique tenant IDs from the database...")
-
     session = get_database_session()
     try:
-        # Query to get all distinct tenant_ids from the journal table
+        if specific_tenant_id:
+            logger.info(f"Checking if specific tenant ID exists: {specific_tenant_id}")
+            # Query to check if the specific tenant exists
+            query = text("SELECT DISTINCT tenant_id FROM xero_tenants WHERE tenant_id = :tenant_id")
+            result = session.execute(query, {"tenant_id": specific_tenant_id})
+            tenant_ids = [str(row[0]) for row in result]
+
+            if tenant_ids:
+                logger.info(f"Found specific tenant ID: {specific_tenant_id}. Training will be performed for this tenant only.")
+                return tenant_ids
+            else:
+                logger.warning(f"Specific tenant ID '{specific_tenant_id}' not found in database. Falling back to training all tenants.")
+
+        # Fetch all tenant IDs (either because no specific ID was provided or it wasn't found)
+        logger.info("Fetching all unique tenant IDs from the database...")
         query = text("SELECT DISTINCT tenant_id FROM xero_tenants")
         result = session.execute(query)
         tenant_ids = [str(row[0]) for row in result]
-        logger.info(f"Found {len(tenant_ids)} unique tenant IDs")
+        logger.info(f"Found {len(tenant_ids)} unique tenant IDs. Training will be performed for all tenants.")
         return tenant_ids
     except Exception as e:
         session.rollback()
