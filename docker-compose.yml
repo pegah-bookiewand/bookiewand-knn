@@ -1,0 +1,137 @@
+services:
+  # GST Validation Services
+  gst_validation_model_selection:
+    build:
+      context: .
+      dockerfile: ai/gst_validation/Dockerfile.model_selection
+    container_name: gst_validation_model_selection
+    env_file:
+      - ./ai/.env
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  gst_validation_training:
+    build:
+      context: .
+      dockerfile: ai/gst_validation/Dockerfile.training
+    container_name: gst_validation_training
+    env_file:
+      - ./ai/.env
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  gst_validation_inference:
+    build:
+      context: .
+      dockerfile: ai/gst_validation/Dockerfile.inference
+    container_name: gst_validation_inference
+    env_file:
+      - ./ai/.env
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./models:/app/models
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  gst_validation_context_preprocessing:
+    build:
+      context: .
+      dockerfile: ai/gst_validation/Dockerfile.context_preprocessing
+    container_name: gst_validation_context_preprocessing
+    env_file:
+      - ./ai/.env
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  # Account Mapping Services
+  account_mapping_model_selection:
+    build:
+      context: .
+      dockerfile: ai/account_mapping/Dockerfile.model_selection
+    container_name: account_mapping_model_selection
+    env_file:
+      - ./ai/.env
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  account_mapping_training:
+    build:
+      context: .
+      dockerfile: ai/account_mapping/Dockerfile.training
+    container_name: account_mapping_training
+    env_file:
+      - ./ai/.env
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  account_mapping_inference:
+    build:
+      context: .
+      dockerfile: ai/account_mapping/Dockerfile.inference
+    container_name: account_mapping_inference
+    env_file:
+      - ./ai/.env
+    ports:
+      - "8002:8000"
+    volumes:
+      - ./models:/app/models
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  account_mapping_context_preprocessing:
+    build:
+      context: .
+      dockerfile: ai/account_mapping/Dockerfile.context_preprocessing
+    container_name: account_mapping_context_preprocessing
+    env_file:
+      - ./ai/.env
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  # GST Account Combined Services
+  gst_acc_model_selection:
+    build:
+      context: .
+      dockerfile: ai/Dockerfile.gst_acc.model_selection
+    container_name: gst_acc_model_selection
+    env_file:
+      - ./ai/.env
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  gst_acc_training:
+    build:
+      context: .
+      dockerfile: ai/Dockerfile.gst_acc.training
+    container_name: gst_acc_training
+    env_file:
+      - ./ai/.env
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    environment:
+      - PYTHONUNBUFFERED=1
+
+volumes:
+  data:
+  models:
