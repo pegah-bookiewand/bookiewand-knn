@@ -1,4 +1,19 @@
 services:
+  # S3 Browser UI - Web interface to browse LocalStack S3 buckets
+  s3browser:
+    image: filebrowser/filebrowser:latest
+    container_name: s3browser_ai
+    ports:
+      - "8081:80"  # Changed port to avoid potential conflicts
+    volumes:
+      - ./localstack_data:/srv/localstack_data
+      - ./data:/srv/data
+      - ./models:/srv/models
+    environment:
+      - FB_BASEURL=/
+    networks:
+      - bookiewand_bookiewand-network
+
   # GST Validation Services
   gst_validation_model_selection:
     build:
@@ -12,7 +27,10 @@ services:
       - ./models:/app/models
     environment:
       - PYTHONUNBUFFERED=1
-
+      - AWS_ENDPOINT_URL=http://bookiewand-localstack:4566
+    networks:
+      - bookiewand_bookiewand-network
+      
   gst_validation_training:
     build:
       context: .
@@ -25,6 +43,9 @@ services:
       - ./models:/app/models
     environment:
       - PYTHONUNBUFFERED=1
+      - AWS_ENDPOINT_URL=http://bookiewand-localstack:4566
+    networks:
+      - bookiewand_bookiewand-network
 
   gst_validation_inference:
     build:
@@ -39,6 +60,8 @@ services:
       - ./models:/app/models
     environment:
       - PYTHONUNBUFFERED=1
+    networks:
+      - bookiewand_bookiewand-network
 
   gst_validation_context_preprocessing:
     build:
@@ -51,6 +74,9 @@ services:
       - ./data:/app/data
     environment:
       - PYTHONUNBUFFERED=1
+      - AWS_ENDPOINT_URL=http://bookiewand-localstack:4566
+    networks:
+      - bookiewand_bookiewand-network
 
   # Account Mapping Services
   account_mapping_model_selection:
@@ -65,6 +91,9 @@ services:
       - ./models:/app/models
     environment:
       - PYTHONUNBUFFERED=1
+      - AWS_ENDPOINT_URL=http://bookiewand-localstack:4566
+    networks:
+      - bookiewand_bookiewand-network
 
   account_mapping_training:
     build:
@@ -78,6 +107,9 @@ services:
       - ./models:/app/models
     environment:
       - PYTHONUNBUFFERED=1
+      - AWS_ENDPOINT_URL=http://bookiewand-localstack:4566
+    networks:
+      - bookiewand_bookiewand-network
 
   account_mapping_inference:
     build:
@@ -92,6 +124,8 @@ services:
       - ./models:/app/models
     environment:
       - PYTHONUNBUFFERED=1
+    networks:
+      - bookiewand_bookiewand-network
 
   account_mapping_context_preprocessing:
     build:
@@ -104,6 +138,9 @@ services:
       - ./data:/app/data
     environment:
       - PYTHONUNBUFFERED=1
+      - AWS_ENDPOINT_URL=http://bookiewand-localstack:4566
+    networks:
+      - bookiewand_bookiewand-network
 
   # GST Account Combined Services
   gst_acc_model_selection:
@@ -118,6 +155,9 @@ services:
       - ./models:/app/models
     environment:
       - PYTHONUNBUFFERED=1
+      - AWS_ENDPOINT_URL=http://bookiewand-localstack:4566
+    networks:
+      - bookiewand_bookiewand-network
 
   gst_acc_training:
     build:
@@ -131,7 +171,13 @@ services:
       - ./models:/app/models
     environment:
       - PYTHONUNBUFFERED=1
+      - AWS_ENDPOINT_URL=http://bookiewand-localstack:4566
+    networks:
+      - bookiewand_bookiewand-network
+
+networks:
+  bookiewand_bookiewand-network:
+    external: true
 
 volumes:
   data:
-  models:
