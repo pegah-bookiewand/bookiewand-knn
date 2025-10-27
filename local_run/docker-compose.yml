@@ -1,0 +1,38 @@
+services:
+  # GST Validation Context Preprocessing
+  gst_validation_context_preprocessing:
+    build:
+      context: ..
+      dockerfile: ai/gst_validation/Dockerfile.context_preprocessing
+    container_name: gst_validation_context_preprocessing
+    env_file:
+      - ../ai/.env
+    volumes:
+      - ../data:/app/data
+    environment:
+      - ENV=local
+      - PYTHONUNBUFFERED=1
+      - AWS_ENDPOINT_URL=http://bookiewand-localstack:4566
+    networks:
+      - bookiewand_bookiewand-network
+
+  # Account Mapping Context Preprocessing
+  account_mapping_context_preprocessing:
+    build:
+      context: ..
+      dockerfile: ai/account_mapping/Dockerfile.context_preprocessing
+    container_name: account_mapping_context_preprocessing
+    env_file:
+      - ../ai/.env
+    volumes:
+      - ../data:/app/data
+    environment:
+      - ENV=local
+      - PYTHONUNBUFFERED=1
+      - AWS_ENDPOINT_URL=http://bookiewand-localstack:4566
+    networks:
+      - bookiewand_bookiewand-network
+
+networks:
+  bookiewand_bookiewand-network:
+    external: true
