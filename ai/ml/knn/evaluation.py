@@ -92,6 +92,19 @@ async def evaluation_step(
 
     logger.info(f"Found {len(tenant_ids)} tenant IDs: {tenant_ids}")
 
+    # Filter by SPECIFIC_TENANT_ID if set in environment
+    specific_tenant_id = os.getenv('SPECIFIC_TENANT_ID', '').strip()
+    if specific_tenant_id:
+        logger.info(f"Filtering for specific tenant ID: {specific_tenant_id}")
+        if specific_tenant_id in tenant_ids:
+            tenant_ids = [specific_tenant_id]
+            logger.info(f"Filtered to single tenant: {specific_tenant_id}")
+        else:
+            logger.error(f"Specified tenant ID {specific_tenant_id} not found in available tenants: {tenant_ids}")
+            raise ValueError(f"SPECIFIC_TENANT_ID '{specific_tenant_id}' not found in available tenant IDs")
+    else:
+        logger.info("No SPECIFIC_TENANT_ID set, processing all tenants")
+
     # extract tenant ids that have the given method_run_timestamp
     valid_tenant_ids = []
     logger.info(f"Validating tenant IDs for method run timestamp: {method_run_timestamp}")

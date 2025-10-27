@@ -15,7 +15,7 @@ load_dotenv(override=True)
 logger = get_logger()
 
 
-async def main():
+def main():
     run_timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d-%H-%M-%S")
 
     # Reading configurations
@@ -59,20 +59,22 @@ async def main():
         table_n_neighbors=llm_config["table_n_neighbors"],
     )
 
-    # ============ Evaluation Step ============
-    await evaluation_step(
-        task_name="GST_VALIDATION",
-        method_name="LLM",
-        method_run_timestamp=run_timestamp,
-        base_data_dir=GST_VALIDATION_BASE_DATA_DIR,
-        bucket_name=GST_VALIDATION_BUCKET_NAME,
-        checkpoints_prefix=GST_VALIDATION_CHECKPOINTS_DIR,
-        logger=logger
-    )
+    logger.info("Context preprocessing completed successfully!")
+
+    # ============ Evaluation Step (SKIPPED - requires API key) ============
+    # Uncomment the following to run LLM evaluation (requires OPENROUTER_API_KEY to be set)
+    # await evaluation_step(
+    #     task_name="GST_VALIDATION",
+    #     method_name="LLM",
+    #     method_run_timestamp=run_timestamp,
+    #     base_data_dir=GST_VALIDATION_BASE_DATA_DIR,
+    #     bucket_name=GST_VALIDATION_BUCKET_NAME,
+    #     checkpoints_prefix=GST_VALIDATION_CHECKPOINTS_DIR,
+    #     logger=logger
+    # )
 
     set_service_desired_count_to_zero()
 
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    main()

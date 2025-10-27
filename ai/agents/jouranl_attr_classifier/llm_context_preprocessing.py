@@ -85,7 +85,10 @@ def context_preprocessing_step(
     # ========= data collection step =========
     raw_dataset_dir = os.path.join(base_data_dir, raw_data_prefix, run_timestamp)
     os.makedirs(raw_dataset_dir, exist_ok=True)
-    tenant_ids = fetch_tenant_ids()
+
+    # Get specific tenant ID from environment if set
+    specific_tenant_id = os.getenv('SPECIFIC_TENANT_ID', '').strip() or None
+    tenant_ids = fetch_tenant_ids(specific_tenant_id=specific_tenant_id)
 
     artifact_dirs = []
     artifact_prefixes = []
